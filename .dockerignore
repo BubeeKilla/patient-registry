@@ -1,0 +1,30 @@
+# Bytecode & Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+
+# SQLite DB file (unless you WANT it inside the image)
+patients.db
+
+# Git & GitHub
+.git
+.gitignore
+.github/
+
+# Pytest cache
+.pytest_cache/
+
+# Docker-related
+.dockerignore
+Dockerfile
+
+# IDE/editor configs
+.vscode/
+.idea/
+
+# Misc
+*.log

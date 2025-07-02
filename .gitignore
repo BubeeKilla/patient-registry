@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.venv/
+
+# Pulumi state files
+Pulumi.*
+.terraform/
+
+# Python env files
+.env
+*.env
+
+# macOS files
+.DS_Store
+
+# VSCode settings
+.vscode/
+
+# Docker files (optional if you don’t want to version them)
+*.log
+
+# Node modules (if ever added)
+node_modules/

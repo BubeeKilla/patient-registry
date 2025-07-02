@@ -42,16 +42,18 @@ auth = aws.ecr.get_authorization_token()
 decoded = base64.b64decode(auth.authorization_token).decode()
 username, password = decoded.split(":")
 
-# Hash app files to force image rebuilds when code changes
+# Hash relevant files to trigger rebuild on change
 hash_data = b""
-for file in ["app.py", "requirements.txt"]:
+files_to_hash = ["app.py", "requirements.txt", "templates/index.html", "templates/edit.html", "templates/login.html", "templates/searchresults.html"]
+
+for file in files_to_hash:
     if os.path.exists(file):
         with open(file, "rb") as f:
             hash_data += f.read()
 
 app_hash = hashlib.sha256(hash_data).hexdigest()[:8]
 
-# Correct way to build image_name with apply
+# Final image name includes content-based hash
 image_name = repo.repository_url.apply(lambda url: f"{url}:{app_hash}")
 
 image = docker.Image(

@@ -7,8 +7,13 @@ __pycache__/
 venv/
 .venv/
 
-# Pulumi state files
-Pulumi.*
+# Pulumi state files (only ignore stack configs, NOT Pulumi.yaml project file)
+Pulumi.dev.yaml
+Pulumi.prod.yaml
+Pulumi.stack.yaml
+Pulumi.stack.json
+
+# Terraform (if ever added)
 .terraform/
 
 # Python env files

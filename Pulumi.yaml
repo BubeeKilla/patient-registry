@@ -1,0 +1,3 @@
+name: patient-registry
+runtime: python
+description: Patient registry Flask app deployed on AWS Fargate with Pulumi

@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 import psycopg2
 import logging
 import os
+import time
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 
@@ -33,6 +34,18 @@ def init_db():
     ''')
     conn.commit()
     conn.close()
+
+# Retry logic
+def init_db_with_retry(retries=10, delay=5):
+    for attempt in range(retries):
+        try:
+            init_db()
+            print("✅ DB initialized successfully.")
+            return
+        except Exception as e:
+            print(f"⚠️ DB init failed (attempt {attempt+1}): {e}")
+            time.sleep(delay)
+    raise Exception("❌ Failed to initialize DB after retries.")
 
 @app.before_request
 def session_timeout():
@@ -218,10 +231,9 @@ def delete(patient_id):
     c.execute('DELETE FROM patients WHERE id = %s', (patient_id,))
     conn.commit()
     conn.close()
-    flash("Patient deleted.", "danger")
+    flash("Patient deleted.", 'danger')
     return redirect(url_for('index'))
 
-if __name__ == '__main__':
-    init_db()
-    app.run(host='0.0.0.0', port=5000)
-
+if __name__ == "__main__":
+    init_db_with_retry()
+    app.run(host="0.0.0.0", port=5000)

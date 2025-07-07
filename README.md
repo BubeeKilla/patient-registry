@@ -1,12 +1,12 @@
 # 🩺 Patient Registry - Flask, Docker, Pulumi, AWS
 
-A simple, production-ready Patient Registry web app built with:
+A simple, production-grade Patient Registry web app built with:
 
 - 🐍 **Flask** for backend  
 - 🐳 **Docker** containerization  
 - 🛠️ **Pulumi** for Infrastructure as Code  
-- ☁️ **AWS ECS Fargate** deployment  
-- 🗄️ SQLite (local) or RDS (coming soon) for persistent storage  
+- ☁️ **AWS ECS Fargate** for deployment  
+- 🗄️ **AWS RDS (PostgreSQL)** for persistent storage  
 - 🔒 Basic admin authentication  
 
 ---
@@ -34,7 +34,7 @@ A simple, production-ready Patient Registry web app built with:
 
 ### Run Locally
 
-```bash
+```
 # Install Python dependencies
 pip install -r requirements.txt
 
@@ -56,9 +56,9 @@ Password: password
 ## ☁️ Deploy to AWS
 
 1. Configure Pulumi with your AWS credentials  
-2. Build & deploy:
+2. Deploy infrastructure & app:
 
-```bash
+```
 pulumi up
 ```
 
@@ -67,30 +67,41 @@ Pulumi provisions:
 - VPC & networking  
 - Security groups  
 - ECS Cluster & Fargate Service  
+- AWS RDS (PostgreSQL) instance  
 - Docker image build & push to ECR  
-- Task Definition & Service deployment  
+- Task Definition with injected DB credentials  
+- Service deployment  
+
+**Note:** After each new Pulumi deployment, the RDS hostname may change.  
+
+### ✅ **Important: Update GitHub Secret `DB_HOST` manually**  
+Copy the new RDS endpoint output from `pulumi up` and update your GitHub Actions Secrets before triggering CI/CD.
 
 ---
 
 ## 🔄 CI/CD Pipeline
 
-This project includes a **GitHub Actions** workflow to redeploy automatically on every push to `main`.
+The project includes a **GitHub Actions** workflow to redeploy automatically on every push to `main`.
 
 ### Required GitHub Secrets:
 
 - `AWS_ACCESS_KEY_ID`  
 - `AWS_SECRET_ACCESS_KEY`  
 - `PULUMI_ACCESS_TOKEN`  
+- `DB_HOST` (update after each Pulumi deploy)  
+- `DB_NAME_PG`  
+- `DB_USER`  
+- `DB_PASSWORD`  
 
 ---
 
 ## 🛠️ Roadmap
 
-- Replace SQLite with AWS RDS  
 - Replace hardcoded login with secure user management  
 - Add role-based access control  
 - Extend patient model (more fields, validation)  
 - Improve UI/UX  
+- Reminder: Manually update `DB_HOST` GitHub Secret after every Pulumi deploy  
 
 ---
 

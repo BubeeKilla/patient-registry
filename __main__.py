@@ -41,14 +41,13 @@ route_table = aws.ec2.RouteTable("routeTable", vpc_id=vpc.id, routes=[{
 aws.ec2.RouteTableAssociation("routeTableAssoc1", subnet_id=subnet1.id, route_table_id=route_table.id)
 aws.ec2.RouteTableAssociation("routeTableAssoc2", subnet_id=subnet2.id, route_table_id=route_table.id)
 
-# Security Group (Expose port 5000)
+# Security Groups
 sg = aws.ec2.SecurityGroup("flask-sg",
     vpc_id=vpc.id,
     ingress=[{"protocol": "tcp", "from_port": 5000, "to_port": 5000, "cidr_blocks": ["0.0.0.0/0"]}],
     egress=[{"protocol": "-1", "from_port": 0, "to_port": 0, "cidr_blocks": ["0.0.0.0/0"]}]
 )
 
-# Security Group for RDS
 rds_sg = aws.ec2.SecurityGroup("rds-sg",
     vpc_id=vpc.id,
     ingress=[
@@ -110,7 +109,7 @@ image = docker.Image(
 # ECS Cluster
 cluster = aws.ecs.Cluster("flask-cluster")
 
-# Task Execution Role
+# IAM Role
 role = aws.iam.Role("ecsTaskExecRole",
     assume_role_policy=json.dumps({
         "Version": "2012-10-17",
@@ -130,7 +129,7 @@ aws.iam.RolePolicyAttachment("ecsTaskExecRolePolicy",
 # CloudWatch Logs
 log_group = aws.cloudwatch.LogGroup("flask-logs", retention_in_days=1)
 
-# Task Definition
+# ECS Task Definition with RDS injected
 task_def = aws.ecs.TaskDefinition("flask-task",
     family="flask-task",
     cpu="256",
@@ -138,7 +137,7 @@ task_def = aws.ecs.TaskDefinition("flask-task",
     network_mode="awsvpc",
     requires_compatibilities=["FARGATE"],
     execution_role_arn=role.arn,
-    container_definitions=pulumi.Output.all(image.image_name, log_group.name, region).apply(
+    container_definitions=pulumi.Output.all(image.image_name, log_group.name, region, rds.address).apply(
         lambda args: json.dumps([{
             "name": "flask-app",
             "image": args[0],
@@ -150,12 +149,18 @@ task_def = aws.ecs.TaskDefinition("flask-task",
                     "awslogs-region": args[2],
                     "awslogs-stream-prefix": "flask"
                 }
-            }
+            },
+            "environment": [
+                {"name": "DB_HOST", "value": args[3]},
+                {"name": "DB_NAME_PG", "value": "patients"},
+                {"name": "DB_USER", "value": "postgres"},
+                {"name": "DB_PASSWORD", "value": "postgres123"}
+            ]
         }])
     )
 )
 
-# Fargate Service
+# ECS Service
 service = aws.ecs.Service("flask-service",
     cluster=cluster.arn,
     desired_count=1,

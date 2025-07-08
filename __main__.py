@@ -50,10 +50,7 @@ sg = aws.ec2.SecurityGroup("flask-sg",
 
 rds_sg = aws.ec2.SecurityGroup("rds-sg",
     vpc_id=vpc.id,
-    ingress=[
-        {"protocol": "tcp", "from_port": 5432, "to_port": 5432, "security_groups": [sg.id]},
-        {"protocol": "tcp", "from_port": 5432, "to_port": 5432, "cidr_blocks": ["92.72.51.175/32"]}
-    ],
+    ingress=[{"protocol": "tcp", "from_port": 5432, "to_port": 5432, "security_groups": [sg.id]}],
     egress=[{"protocol": "-1", "from_port": 0, "to_port": 0, "cidr_blocks": ["0.0.0.0/0"]}]
 )
 

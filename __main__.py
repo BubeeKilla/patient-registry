@@ -154,7 +154,9 @@ task_def = aws.ecs.TaskDefinition("flask-task",
                 {"name": "DB_HOST", "value": args[3]},
                 {"name": "DB_NAME_PG", "value": "patients"},
                 {"name": "DB_USER", "value": "postgres"},
-                {"name": "DB_PASSWORD", "value": "postgres123"}
+                {"name": "DB_PASSWORD", "value": "postgres123"},
+                {"name": "ADMIN_USERNAME", "value": os.getenv("ADMIN_USERNAME")},
+                {"name": "ADMIN_PASSWORD", "value": os.getenv("ADMIN_PASSWORD")}
             ]
         }])
     )

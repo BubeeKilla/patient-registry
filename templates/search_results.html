@@ -68,6 +68,14 @@
         </div>
     {% endif %}
 
+    <!-- Auto-remove flash messages -->
+    <script>
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => alert.remove());
+        }, 5000);
+    </script>
+
     <!-- Client-side table sorting -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {

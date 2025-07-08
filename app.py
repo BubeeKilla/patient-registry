@@ -60,13 +60,18 @@ def init_db():
         )
     ''')
 
-    # Create default admin if none exists
+    # Secure: fetch from environment (no default fallback!)
+    admin_user = os.environ["ADMIN_USERNAME"]
+    admin_pass_raw = os.environ["ADMIN_PASSWORD"]
+    admin_pass = generate_password_hash(admin_pass_raw)
+
     c.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
     if c.fetchone()[0] == 0:
-        admin_user = "admin"
-        admin_pass = generate_password_hash("admin123")
-        c.execute("INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)", (admin_user, admin_pass, 'admin'))
-        print("👤 Default admin user created: admin / admin123")
+        c.execute(
+            "INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)",
+            (admin_user, admin_pass, 'admin')
+        )
+        print(f"👤 Default admin user created: {admin_user}")
 
     conn.commit()
     conn.close()

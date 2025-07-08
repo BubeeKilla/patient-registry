@@ -8,16 +8,19 @@
 <body class="bg-light">
   {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          {% for category, message in messages %}
+          <div class="alert alert-{{ category }} mt-3">
+              {{ message }}
           </div>
-        {% endfor %}
+          {% endfor %}
       {% endif %}
-    {% endwith %}
+  {% endwith %}
 
   <div class="container mt-5">
+    <div id="countdown" class="position-fixed top-0 end-0 m-3 text-muted small">
+        Auto-logout in: <span id="countdown-timer">120</span> sec
+    </div>
+
     <h2>Doctor Management</h2>
     <table class="table table-bordered table-hover">
       <thead>
@@ -51,10 +54,39 @@
 
   <!-- Auto-remove flash messages -->
   <script>
-    setTimeout(() => {
-        const alerts = document.querySelectorAll('.alert');
-        alerts.forEach(alert => alert.remove());
-    }, 5000);
-</script>
+      setTimeout(() => {
+          const alerts = document.querySelectorAll('.alert');
+          alerts.forEach(alert => alert.remove());
+      }, 5000);
+  </script>
+
+  <!-- Real-time session countdown synced with server -->
+  <script>
+    let countdownInterval;
+
+    function fetchRemainingTime() {
+        fetch('/session-status')
+            .then(response => response.json())
+            .then(data => {
+                const timeLeft = data.remaining;
+                const display = document.getElementById('countdown-timer');
+                
+                if (display) {
+                    display.textContent = timeLeft;
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    window.location.href = "/logout";
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching session status:', err);
+            });
+    }
+
+    countdownInterval = setInterval(fetchRemainingTime, 1000);
+    fetchRemainingTime();
+  </script>
 </body>
 </html>

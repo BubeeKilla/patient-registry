@@ -1,13 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 import psycopg2
-import logging
 import os
 import time
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-
 
 load_dotenv()
 
@@ -23,7 +21,15 @@ def login_required(view_func):
         return view_func(*args, **kwargs)
     return wrapped_view
 
-# Connection helper
+def admin_required(view_func):
+    @wraps(view_func)
+    def wrapped_view(*args, **kwargs):
+        if not session.get('logged_in') or session.get('role') != 'admin':
+            flash("Admin access required.", "danger")
+            return redirect(url_for('login'))
+        return view_func(*args, **kwargs)
+    return wrapped_view
+
 def get_conn():
     return psycopg2.connect(
         host=os.getenv("DB_HOST"),
@@ -32,12 +38,9 @@ def get_conn():
         password=os.getenv("DB_PASSWORD", "postgres123")
     )
 
-# Init table
 def init_db():
     conn = get_conn()
     c = conn.cursor()
-
-    # Create patients table if it doesn't exist
     c.execute('''
         CREATE TABLE IF NOT EXISTS patients (
             id SERIAL PRIMARY KEY,
@@ -46,20 +49,17 @@ def init_db():
             condition TEXT
         )
     ''')
-
-    # Create users table if it doesn't exist
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'doctor'
         )
     ''')
-
     conn.commit()
     conn.close()
 
-# Retry logic
 def init_db_with_retry(retries=10, delay=5):
     for attempt in range(retries):
         try:
@@ -95,6 +95,7 @@ def session_status():
     return jsonify({'remaining': 0})
 
 @app.route('/register', methods=['GET', 'POST'])
+@admin_required
 def register():
     if request.method == 'POST':
         username = request.form['username']
@@ -107,7 +108,7 @@ def register():
         conn = get_conn()
         c = conn.cursor()
         try:
-            c.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s)", (username, password_hash))
+            c.execute("INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)", (username, password_hash, 'doctor'))
             conn.commit()
             flash("User registered successfully!", "success")
         except psycopg2.errors.UniqueViolation:
@@ -115,7 +116,7 @@ def register():
             flash("Username already exists.", "danger")
         finally:
             conn.close()
-        return redirect(url_for('login'))
+        return redirect(url_for('register'))
 
     return render_template('register.html')
 
@@ -127,13 +128,14 @@ def login():
 
         conn = get_conn()
         c = conn.cursor()
-        c.execute("SELECT password_hash FROM users WHERE username = %s", (username,))
+        c.execute("SELECT password_hash, role FROM users WHERE username = %s", (username,))
         result = c.fetchone()
         conn.close()
 
         if result and check_password_hash(result[0], password):
             session['logged_in'] = True
             session['username'] = username
+            session['role'] = result[1]
             flash('Login successful!', 'success')
             return redirect(url_for('index'))
 
@@ -149,10 +151,6 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    if not session.get('logged_in'):
-        flash('Please log in to access the patient registry.', 'danger')
-        return redirect(url_for('login'))
-
     sort = request.args.get('sort', 'id')
     order = request.args.get('order', 'asc')
     page = int(request.args.get('page', 1))
@@ -179,10 +177,6 @@ def index():
 @app.route('/search')
 @login_required
 def search():
-    if not session.get('logged_in'):
-        flash('Please log in to search patients.', 'danger')
-        return redirect(url_for('login'))
-
     search_term = request.args.get('q', '')
     page = int(request.args.get('page', 1))
     per_page = 5
@@ -208,12 +202,8 @@ def search():
     return render_template('searchresults.html', patients=patients, search_term=search_term, page=page, total_pages=total_pages, sort=sort, order=order)
 
 @app.route('/add', methods=['POST'])
-@login_required
+@admin_required
 def add():
-    if not session.get('logged_in'):
-        flash('Please log in to add patients.', 'danger')
-        return redirect(url_for('login'))
-
     name = request.form['name']
     age = request.form['age']
     condition = request.form['condition']
@@ -243,12 +233,8 @@ def add():
     return redirect(url_for('index'))
 
 @app.route('/edit/<int:patient_id>', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def edit(patient_id):
-    if not session.get('logged_in'):
-        flash('Please log in to edit patients.', 'danger')
-        return redirect(url_for('login'))
-
     conn = get_conn()
     c = conn.cursor()
 
@@ -285,12 +271,8 @@ def edit(patient_id):
     return render_template('edit.html', patient=patient)
 
 @app.route('/delete/<int:patient_id>')
-@login_required
+@admin_required
 def delete(patient_id):
-    if not session.get('logged_in'):
-        flash('Please log in to delete patients.', 'danger')
-        return redirect(url_for('login'))
-
     conn = get_conn()
     c = conn.cursor()
     c.execute('DELETE FROM patients WHERE id = %s', (patient_id,))

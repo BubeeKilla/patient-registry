@@ -89,6 +89,17 @@ for file in ["app.py", "requirements.txt"]:
         with open(file, "rb") as f:
             hash_data += f.read()
 
+# ✅ Add HTML + static to the image hash logic
+for root, dirs, files in os.walk("templates"):
+    for file in files:
+        with open(os.path.join(root, file), "rb") as f:
+            hash_data += f.read()
+
+for root, dirs, files in os.walk("static"):
+    for file in files:
+        with open(os.path.join(root, file), "rb") as f:
+            hash_data += f.read()
+
 app_hash = hashlib.sha256(hash_data).hexdigest()[:8]
 image_name = pulumi.Output.secret(
     repo.repository_url.apply(lambda url: f"{url}:{app_hash}")

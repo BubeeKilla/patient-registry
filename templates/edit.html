@@ -6,15 +6,18 @@
 </head>
 <body class="p-5">
   
-  {% with messages = get_flashed_messages(with_categories=true) %}
+  <div style="position: fixed; top: 20px; left: 20px; z-index: 1050; max-width: 20%;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-          {% for category, message in messages %}
-          <div class="alert alert-{{ category }} mt-3">
-              {{ message }}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
           </div>
-          {% endfor %}
+        {% endfor %}
       {% endif %}
-  {% endwith %}
+    {% endwith %}
+  </div>
 
   <div id="countdown" class="position-fixed top-0 end-0 m-3 text-muted small">
       Auto-logout in: <span id="countdown-timer">120</span> sec

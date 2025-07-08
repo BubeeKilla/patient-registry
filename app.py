@@ -327,6 +327,20 @@ def delete(patient_id):
     flash("Patient deleted.", 'danger')
     return redirect(url_for('index'))
 
+@app.route('/migrate')
+def migrate():
+    try:
+        conn = get_conn()
+        c = conn.cursor()
+        c.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'doctor'")
+        conn.commit()
+        conn.close()
+        return "✅ Migration complete. You can now delete this route."
+    except psycopg2.errors.DuplicateColumn:
+        return "⚠️ Column 'role' already exists. Nothing to do."
+    except Exception as e:
+        return f"❌ Migration failed: {e}"
+
 if __name__ == "__main__":
     init_db_with_retry()
     app.run(host="0.0.0.0", port=5000)

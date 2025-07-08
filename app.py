@@ -25,7 +25,7 @@ def admin_required(view_func):
     @wraps(view_func)
     def wrapped_view(*args, **kwargs):
         if not session.get('logged_in') or session.get('role') != 'admin':
-            flash("Admin access required.", "danger")
+            flash("Admin access only.", "danger")
             return redirect(url_for('login'))
         return view_func(*args, **kwargs)
     return wrapped_view
@@ -155,6 +155,44 @@ def logout():
     session.clear()
     flash('Logged out.', 'info')
     return redirect(url_for('login'))
+
+@app.route('/admin/doctors')
+@admin_required
+def list_doctors():
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT id, username FROM users WHERE role = 'doctor'")
+    doctors = c.fetchall()
+    conn.close()
+    return render_template('admin_doctors.html', doctors=doctors)
+
+@app.route('/admin/doctors/<int:doctor_id>/delete', methods=['POST'])
+@admin_required
+def delete_doctor(doctor_id):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("DELETE FROM users WHERE id = %s AND role = 'doctor'", (doctor_id,))
+    conn.commit()
+    conn.close()
+    flash("Doctor deleted.", "danger")
+    return redirect(url_for('list_doctors'))
+
+@app.route('/admin/doctors/<int:doctor_id>/change-password', methods=['POST'])
+@admin_required
+def change_doctor_password(doctor_id):
+    new_pass = request.form['new_password']
+    if not new_pass:
+        flash("Password cannot be empty.", "warning")
+        return redirect(url_for('list_doctors'))
+
+    hash_pass = generate_password_hash(new_pass)
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("UPDATE users SET password_hash = %s WHERE id = %s AND role = 'doctor'", (hash_pass, doctor_id))
+    conn.commit()
+    conn.close()
+    flash("Password updated.", "success")
+    return redirect(url_for('list_doctors'))
 
 @app.route('/')
 @login_required

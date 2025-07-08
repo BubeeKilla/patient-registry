@@ -126,10 +126,10 @@ def register():
         try:
             c.execute("INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)", (username, password_hash, 'doctor'))
             conn.commit()
-            flash("User registered successfully!", "success")
+            flash("Doctor registered successfully!", "success")
         except psycopg2.errors.UniqueViolation:
             conn.rollback()
-            flash("Username already exists.", "danger")
+            flash("Doctor already exists.", "danger")
         finally:
             conn.close()
         return redirect(url_for('register'))

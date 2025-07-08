@@ -90,7 +90,7 @@ for file in ["app.py", "requirements.txt"]:
             hash_data += f.read()
 
 app_hash = hashlib.sha256(hash_data).hexdigest()[:8]
-image_name = repo.repository_url.apply(lambda url: f"{url}:{app_hash}")
+image_name = pulumi.Output.secret(f"{repo.repository_url}:{app_hash}")
 
 image = docker.Image(
     "flask-app",
@@ -134,7 +134,7 @@ task_def = aws.ecs.TaskDefinition("flask-task",
     network_mode="awsvpc",
     requires_compatibilities=["FARGATE"],
     execution_role_arn=role.arn,
-    container_definitions=pulumi.Output.all(image.image_name, log_group.name, region, rds.address).apply(
+    container_definitions=pulumi.Output.all(image_name, log_group.name, region, rds.address).apply(
         lambda args: json.dumps([{
             "name": "flask-app",
             "image": args[0],
@@ -175,3 +175,4 @@ pulumi.export("repo_url", repo.repository_url)
 pulumi.export("cluster_name", cluster.name)
 pulumi.export("service_name", service.name)
 pulumi.export("rds_endpoint", rds.address)
+pulumi.export("image_tag_used", image_name)

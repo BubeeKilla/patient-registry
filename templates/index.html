@@ -85,6 +85,13 @@
         </ul>
     </nav>
     
+    {% if session.get('role') == 'admin' %}
+        <div class="my-4 d-flex gap-3 justify-content-center">
+            <a href="{{ url_for('register') }}" class="btn btn-outline-primary">➕ Register New Doctor</a>
+            <a href="{{ url_for('list_doctors') }}" class="btn btn-outline-secondary">👨‍⚕️ Manage Doctors</a>
+        </div>
+    {% endif %}
+
     {% if session.get('logged_in') %}
         <div class="d-flex justify-content-center mt-4">
             <a href="/logout" class="btn btn-primary">Logout</a>

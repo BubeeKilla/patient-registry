@@ -150,6 +150,7 @@ task_def = aws.ecs.TaskDefinition("flask-task",
                 }
             },
             "environment": [
+                {"name": "DEPLOY_HASH", "value": app_hash},
                 {"name": "DB_HOST", "value": args[3]},
                 {"name": "DB_NAME_PG", "value": "patients"},
                 {"name": "DB_USER", "value": "postgres"},

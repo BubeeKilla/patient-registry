@@ -26,7 +26,7 @@ def admin_required(view_func):
     def wrapped_view(*args, **kwargs):
         if not session.get('logged_in') or session.get('role') != 'admin':
             flash("Admin access only.", "danger")
-            return redirect(url_for('login'))
+            return redirect(request.referrer or url_for('index'))
         return view_func(*args, **kwargs)
     return wrapped_view
 
@@ -59,7 +59,7 @@ def init_db():
             role TEXT NOT NULL DEFAULT 'doctor'
         )
     ''')
-    
+
     # Create default admin if none exists
     c.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
     if c.fetchone()[0] == 0:

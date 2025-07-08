@@ -58,12 +58,12 @@ def init_db():
         )
     ''')
     # Create default admin if none exists
-    #c.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
-    #if c.fetchone()[0] == 0:
-    #    admin_user = "admin"
-    #    admin_pass = generate_password_hash("admin123")
-    #    c.execute("INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)", (admin_user, admin_pass, 'admin'))
-    #    print("👤 Default admin user created: admin / admin123")
+    c.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+    if c.fetchone()[0] == 0:
+        admin_user = "admin"
+        admin_pass = generate_password_hash("admin123")
+        c.execute("INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)", (admin_user, admin_pass, 'admin'))
+        print("👤 Default admin user created: admin / admin123")
 
     conn.commit()
     conn.close()
@@ -326,20 +326,6 @@ def delete(patient_id):
     conn.close()
     flash("Patient deleted.", 'danger')
     return redirect(url_for('index'))
-
-@app.route('/migrate')
-def migrate():
-    try:
-        conn = get_conn()
-        c = conn.cursor()
-        c.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'doctor'")
-        conn.commit()
-        conn.close()
-        return "✅ Migration complete. You can now delete this route."
-    except psycopg2.errors.DuplicateColumn:
-        return "⚠️ Column 'role' already exists. Nothing to do."
-    except Exception as e:
-        return f"❌ Migration failed: {e}"
 
 if __name__ == "__main__":
     init_db_with_retry()

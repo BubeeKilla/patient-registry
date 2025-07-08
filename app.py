@@ -5,11 +5,23 @@ import os
 import time
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = '4bfbbef96d464931f13e474c6c8f0717'
+
+def login_required(view_func):
+    @wraps(view_func)
+    def wrapped_view(*args, **kwargs):
+        if not session.get('logged_in'):
+            flash("Login required.", "warning")
+            return redirect(url_for('login'))
+        return view_func(*args, **kwargs)
+    return wrapped_view
 
 # Connection helper
 def get_conn():
@@ -24,6 +36,8 @@ def get_conn():
 def init_db():
     conn = get_conn()
     c = conn.cursor()
+
+    # Create patients table if it doesn't exist
     c.execute('''
         CREATE TABLE IF NOT EXISTS patients (
             id SERIAL PRIMARY KEY,
@@ -32,6 +46,16 @@ def init_db():
             condition TEXT
         )
     ''')
+
+    # Create users table if it doesn't exist
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
@@ -70,14 +94,50 @@ def session_status():
         return jsonify({'remaining': max(remaining, 0)})
     return jsonify({'remaining': 0})
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if not username or not password:
+            flash("Username and password required.", "warning")
+            return redirect(url_for('register'))
+
+        password_hash = generate_password_hash(password)
+        conn = get_conn()
+        c = conn.cursor()
+        try:
+            c.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s)", (username, password_hash))
+            conn.commit()
+            flash("User registered successfully!", "success")
+        except psycopg2.errors.UniqueViolation:
+            conn.rollback()
+            flash("Username already exists.", "danger")
+        finally:
+            conn.close()
+        return redirect(url_for('login'))
+
+    return render_template('register.html')
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        if request.form['username'] == 'admin' and request.form['password'] == 'password':
+        username = request.form['username']
+        password = request.form['password']
+
+        conn = get_conn()
+        c = conn.cursor()
+        c.execute("SELECT password_hash FROM users WHERE username = %s", (username,))
+        result = c.fetchone()
+        conn.close()
+
+        if result and check_password_hash(result[0], password):
             session['logged_in'] = True
+            session['username'] = username
             flash('Login successful!', 'success')
             return redirect(url_for('index'))
-        flash('Invalid credentials.', 'danger')
+
+        flash('Invalid username or password.', 'danger')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -87,6 +147,7 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/')
+@login_required
 def index():
     if not session.get('logged_in'):
         flash('Please log in to access the patient registry.', 'danger')
@@ -116,6 +177,7 @@ def index():
     return render_template('index.html', patients=patients, sort=sort, order=order, page=page, total_pages=total_pages)
 
 @app.route('/search')
+@login_required
 def search():
     if not session.get('logged_in'):
         flash('Please log in to search patients.', 'danger')
@@ -146,6 +208,7 @@ def search():
     return render_template('searchresults.html', patients=patients, search_term=search_term, page=page, total_pages=total_pages, sort=sort, order=order)
 
 @app.route('/add', methods=['POST'])
+@login_required
 def add():
     if not session.get('logged_in'):
         flash('Please log in to add patients.', 'danger')
@@ -180,6 +243,7 @@ def add():
     return redirect(url_for('index'))
 
 @app.route('/edit/<int:patient_id>', methods=['GET', 'POST'])
+@login_required
 def edit(patient_id):
     if not session.get('logged_in'):
         flash('Please log in to edit patients.', 'danger')
@@ -221,6 +285,7 @@ def edit(patient_id):
     return render_template('edit.html', patient=patient)
 
 @app.route('/delete/<int:patient_id>')
+@login_required
 def delete(patient_id):
     if not session.get('logged_in'):
         flash('Please log in to delete patients.', 'danger')

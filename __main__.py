@@ -90,7 +90,9 @@ for file in ["app.py", "requirements.txt"]:
             hash_data += f.read()
 
 app_hash = hashlib.sha256(hash_data).hexdigest()[:8]
-image_name = repo.repository_url.apply(lambda url: f"{url}:{app_hash}").secret()
+image_name = pulumi.Output.secret(
+    repo.repository_url.apply(lambda url: f"{url}:{app_hash}")
+)
 
 image = docker.Image(
     "flask-app",

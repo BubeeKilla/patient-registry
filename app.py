@@ -248,7 +248,7 @@ def search():
     patients = c.fetchall()
     conn.close()
     total_pages = (total + per_page - 1) // per_page
-    return render_template('searchresults.html', patients=patients, search_term=search_term, page=page, total_pages=total_pages, sort=sort, order=order)
+    return render_template('search_results.html', patients=patients, search_term=search_term, page=page, total_pages=total_pages, sort=sort, order=order)
 
 @app.route('/add', methods=['POST'])
 @admin_required

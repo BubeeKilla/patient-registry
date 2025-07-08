@@ -41,6 +41,7 @@ def get_conn():
 def init_db():
     conn = get_conn()
     c = conn.cursor()
+
     c.execute('''
         CREATE TABLE IF NOT EXISTS patients (
             id SERIAL PRIMARY KEY,
@@ -49,6 +50,7 @@ def init_db():
             condition TEXT
         )
     ''')
+
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
@@ -57,6 +59,7 @@ def init_db():
             role TEXT NOT NULL DEFAULT 'doctor'
         )
     ''')
+    
     # Create default admin if none exists
     c.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
     if c.fetchone()[0] == 0:

@@ -32,10 +32,10 @@ def admin_required(view_func):
 
 def get_conn():
     return psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        database=os.getenv("DB_NAME_PG", "patients"),
-        user=os.getenv("DB_USER", "postgres"),
-        password=os.getenv("DB_PASSWORD", "postgres123")
+        host=os.environ["DB_HOST"],
+        database=os.environ["DB_NAME_PG"],
+        user=os.environ["DB_USER"],
+        password=os.environ["DB_PASSWORD"]
     )
 
 def init_db():
